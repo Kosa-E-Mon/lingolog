@@ -87,10 +87,15 @@ main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;min
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .memo-area{padding:10px 14px;flex:0 0 auto;display:flex;flex-direction:column;gap:8px;overflow:visible}
 .memo-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.memo-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .memo-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
 .memo-voice-btn{padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;font-weight:600}
 .memo-voice-btn:hover,.memo-voice-btn.on{border-color:var(--green);color:var(--green)}
 .memo-voice-btn.on{background:rgba(63,185,80,.08)}
+.memo-history-btn{padding:5px 9px;border:1px solid rgba(88,166,255,.35);border-radius:6px;background:rgba(88,166,255,.1);color:var(--accent);font-size:11px;font-weight:700}
+.memo-history-btn:hover{border-color:var(--accent)}
+.memo-lang{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 7px;outline:none}
+.memo-lang:focus{border-color:rgba(88,166,255,.5)}
 .memo-input{flex:1 1 120px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;resize:none;outline:none;line-height:1.5;min-height:70px}
 .memo-input::placeholder{color:var(--muted)}
 .memo-input:focus{border-color:rgba(88,166,255,.5)}
@@ -98,6 +103,8 @@ main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;min
 .insights-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .insights-title{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
 .insights-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.range-select{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:5px 7px;outline:none}
+.range-select:focus{border-color:rgba(88,166,255,.5)}
 .mini-btn{padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;font-weight:600}
 .mini-btn:hover{border-color:var(--accent);color:var(--accent)}
 .chart-wrap{height:132px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px}
@@ -110,6 +117,7 @@ main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;min
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:10px;width:430px;max-width:92vw;padding:20px;display:flex;flex-direction:column;gap:14px}
+.modal.wide{width:860px;max-height:86vh}
 .modal-header{display:flex;align-items:center;justify-content:space-between}
 .modal-title{font-size:14px;font-weight:700}
 .modal-close{background:transparent;border:none;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:4px}
@@ -121,6 +129,14 @@ main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;min
 .setting-note{font-size:10px;color:var(--muted);line-height:1.6}
 .modal-footer{display:flex;justify-content:flex-end;gap:8px}
 .modal-save{padding:7px 18px;background:var(--accent);border:none;border-radius:6px;color:#0d1117;font-size:12px;font-weight:700}
+.journal-list{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:4px}
+.journal-card{border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:10px;display:grid;grid-template-columns:120px 1fr;gap:10px}
+.journal-date{font-family:var(--mono);font-size:12px;color:var(--text);font-weight:700}
+.journal-stats{font-size:10px;color:var(--muted);line-height:1.7;margin-top:6px}
+.journal-memo{white-space:pre-wrap;font-size:12px;line-height:1.65;color:var(--text)}
+.journal-empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:12px}
+.journal-toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.journal-filter{margin-right:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:6px 8px}
 hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
 @media (max-width:860px){
   body{height:auto;min-height:100vh;overflow:auto}
@@ -199,13 +215,28 @@ hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
     <div class="memo-area">
       <div class="memo-head">
         <span class="memo-label">今日のメモ</span>
-        <button class="memo-voice-btn" id="memo-voice-btn" onclick="toggleMemoVoice()">音声入力</button>
+        <div class="memo-tools">
+          <select class="memo-lang" id="memo-voice-lang" onchange="setMemoVoiceLang(this.value)">
+            <option value="ja-JP">日本語</option>
+            <option value="en-US">English</option>
+          </select>
+          <button class="memo-voice-btn" id="memo-voice-btn" onclick="toggleMemoVoice()">音声入力</button>
+          <button class="memo-history-btn" onclick="openJournal()">履歴</button>
+        </div>
       </div>
       <textarea class="memo-input" id="today-memo" placeholder="今日の学習で気づいたこと、難しかった表現、次に復習したいことなど" oninput="saveMemo()"></textarea>
       <div class="insights">
         <div class="insights-head">
           <span class="insights-title">7日間の推移</span>
           <div class="insights-actions">
+            <select class="range-select" id="chart-range" onchange="setChartRange(this.value)">
+              <option value="7">1週間</option>
+              <option value="30">1か月</option>
+              <option value="90">3か月</option>
+              <option value="180">半年</option>
+              <option value="365">1年</option>
+              <option value="all">全期間</option>
+            </select>
             <button class="mini-btn" onclick="renderDashboard()">更新</button>
             <button class="mini-btn" onclick="openPdfReport()">PDF用レポート</button>
           </div>
@@ -215,11 +246,11 @@ hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
         </div>
         <div class="summary-row">
           <div class="summary-item">
-            <div class="summary-label">7日視聴</div>
+            <div class="summary-label" id="sum-watch-label">期間視聴</div>
             <div class="summary-val" id="sum-watch">00:00:00</div>
           </div>
           <div class="summary-item">
-            <div class="summary-label">7日発話</div>
+            <div class="summary-label" id="sum-speak-label">期間発話</div>
             <div class="summary-val green" id="sum-speak">00:00:00</div>
           </div>
           <div class="summary-item">
@@ -278,6 +309,28 @@ hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
   </div>
 </div>
 
+<div class="modal-bg" id="journal-modal" onclick="closeJournalOutside(event)">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span class="modal-title">ジャーナル履歴</span>
+      <button class="modal-close" onclick="closeJournal()">×</button>
+    </div>
+    <hr class="mdivider">
+    <div class="journal-toolbar">
+      <select class="journal-filter" id="journal-range" onchange="renderJournal()">
+        <option value="30">直近1か月</option>
+        <option value="90">直近3か月</option>
+        <option value="180">半年</option>
+        <option value="365">1年</option>
+        <option value="all">全期間</option>
+      </select>
+      <button class="mini-btn" onclick="exportJournalCsv()">CSV出力</button>
+      <button class="mini-btn" onclick="openJournalPrint()">PDF用に開く</button>
+    </div>
+    <div class="journal-list" id="journal-list"></div>
+  </div>
+</div>
+
 <script>
 const DEMO_VIDEOS = [
   {id:"WY-VV_NjS7A", title:"Daily English: Greetings & Small Talk", dur:"3:24", isNew:true},
@@ -306,6 +359,8 @@ let isSpeaking = false;
 let speechThreshold = parseFloat(localStorage.getItem("ll_mic_threshold") || "0.12");
 let memoRecognition = null;
 let memoVoiceOn = false;
+let memoVoiceLang = localStorage.getItem("ll_memo_voice_lang") || "ja-JP";
+let chartRange = localStorage.getItem("ll_chart_range") || "7";
 let todayW = parseInt(localStorage.getItem("el_tw_" + today()) || "0", 10);
 let todayS = parseInt(localStorage.getItem("el_ts_" + today()) || "0", 10);
 let vidW = 0;
@@ -325,6 +380,10 @@ function shortDateLabel(key){
   const [, month, day] = key.split("-");
   return `${Number(month)}/${Number(day)}`;
 }
+function monthLabel(key){
+  const [year, month] = key.split("-");
+  return `${year.slice(2)}/${Number(month)}`;
+}
 function fmt(s){
   s = Math.max(0, Math.floor(s));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
@@ -336,6 +395,16 @@ function fmtHM(s){
   const m = Math.floor((s % 3600) / 60);
   if(h) return `${h}h ${m}m`;
   return `${m}m`;
+}
+function rangeLabel(range = chartRange){
+  return {
+    "7":"1週間",
+    "30":"1か月",
+    "90":"3か月",
+    "180":"半年",
+    "365":"1年",
+    "all":"全期間"
+  }[range] || "1週間";
 }
 function escAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function loadVideos(){
@@ -573,29 +642,81 @@ function updateMicThreshold(value){
   localStorage.setItem("ll_mic_threshold", String(speechThreshold));
 }
 
-function getDailyStats(days = 7){
+function getAvailableDateKeys(){
+  const keys = new Set();
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    const match = key && key.match(/^el_(?:tw|ts|memo)_(\d{4}-\d{2}-\d{2})$/);
+    if(match) keys.add(match[1]);
+  }
+  keys.add(today());
+  return Array.from(keys).sort();
+}
+
+function getDailyStats(range = chartRange){
+  if(range === "all"){
+    const keys = getAvailableDateKeys();
+    return keys.map(key => dailyRow(key));
+  }
+  const days = parseInt(range, 10) || 7;
   const end = new Date();
   const rows = [];
   for(let offset = days - 1; offset >= 0; offset--){
-    const key = dateKey(addDays(end, -offset));
-    const watch = parseInt(localStorage.getItem("el_tw_" + key) || "0", 10);
-    const speak = parseInt(localStorage.getItem("el_ts_" + key) || "0", 10);
-    const memo = localStorage.getItem("el_memo_" + key) || "";
-    rows.push({key, watch, speak, memo});
+    rows.push(dailyRow(dateKey(addDays(end, -offset))));
   }
   return rows;
 }
 
+function dailyRow(key){
+  return {
+    key,
+    label:shortDateLabel(key),
+    watch:parseInt(localStorage.getItem("el_tw_" + key) || "0", 10),
+    speak:parseInt(localStorage.getItem("el_ts_" + key) || "0", 10),
+    memo:localStorage.getItem("el_memo_" + key) || ""
+  };
+}
+
+function getChartRows(rows, range = chartRange){
+  if(range === "7" || range === "30") return rows;
+  const buckets = [];
+  for(let i = 0; i < rows.length; i += 7){
+    const chunk = rows.slice(i, i + 7);
+    const start = chunk[0];
+    const end = chunk[chunk.length - 1];
+    buckets.push({
+      key:start.key,
+      label:range === "365" || range === "all" ? monthLabel(start.key) : shortDateLabel(start.key),
+      watch:chunk.reduce((sum, row) => sum + row.watch, 0),
+      speak:chunk.reduce((sum, row) => sum + row.speak, 0),
+      memo:"",
+      endKey:end.key
+    });
+  }
+  return buckets;
+}
+
+function setChartRange(range){
+  chartRange = range || "7";
+  localStorage.setItem("ll_chart_range", chartRange);
+  renderDashboard();
+}
+
 function renderDashboard(){
-  const rows = getDailyStats(7);
+  const rows = getDailyStats(chartRange);
+  const chartRows = getChartRows(rows, chartRange);
   const totalWatch = rows.reduce((sum, row) => sum + row.watch, 0);
   const totalSpeak = rows.reduce((sum, row) => sum + row.speak, 0);
   const activeDays = rows.filter(row => row.watch || row.speak || row.memo.trim()).length;
+  const label = rangeLabel(chartRange);
+  document.querySelector(".insights-title").textContent = `${label}の推移`;
+  document.getElementById("sum-watch-label").textContent = `${label}視聴`;
+  document.getElementById("sum-speak-label").textContent = `${label}発話`;
   document.getElementById("sum-watch").textContent = fmt(totalWatch);
   document.getElementById("sum-speak").textContent = fmt(totalSpeak);
   document.getElementById("sum-ratio").textContent = totalWatch ? Math.round(totalSpeak / totalWatch * 100) + "%" : "0%";
-  document.getElementById("sum-days").textContent = `${activeDays}/7`;
-  drawProgressChart(rows);
+  document.getElementById("sum-days").textContent = `${activeDays}/${rows.length}`;
+  drawProgressChart(chartRows);
 }
 
 function drawProgressChart(rows){
@@ -628,6 +749,7 @@ function drawProgressChart(rows){
   }
   const group = chartW / rows.length;
   const barW = Math.max(5, Math.min(18, group * 0.26));
+  const labelEvery = rows.length <= 14 ? 1 : rows.length <= 31 ? 3 : Math.ceil(rows.length / 10);
   rows.forEach((row, index) => {
     const x = pad.left + group * index + group / 2;
     const watchH = chartH * row.watch / maxValue;
@@ -638,7 +760,9 @@ function drawProgressChart(rows){
     ctx.fillRect(x + 1, pad.top + chartH - speakH, barW, speakH);
     ctx.fillStyle = "#8b949e";
     ctx.textAlign = "center";
-    ctx.fillText(shortDateLabel(row.key), x, height - 8);
+    if(index % labelEvery === 0 || index === rows.length - 1){
+      ctx.fillText(row.label || shortDateLabel(row.key), x, height - 8);
+    }
   });
   ctx.textAlign = "left";
   ctx.fillStyle = "#e3b341";
@@ -653,7 +777,8 @@ function drawProgressChart(rows){
 
 function openPdfReport(){
   renderDashboard();
-  const rows = getDailyStats(7);
+  const rows = getDailyStats(chartRange);
+  const label = rangeLabel(chartRange);
   const totalWatch = rows.reduce((sum, row) => sum + row.watch, 0);
   const totalSpeak = rows.reduce((sum, row) => sum + row.speak, 0);
   const ratio = totalWatch ? Math.round(totalSpeak / totalWatch * 100) : 0;
@@ -700,15 +825,15 @@ th{background:#f3f6fa}
 </head>
 <body>
 <h1>LingoLog 学習レポート</h1>
-<div class="meta">作成日時: ${escAttr(generated)} / 学習言語: ${escAttr(lang)} / 期間: 直近7日</div>
+<div class="meta">作成日時: ${escAttr(generated)} / 学習言語: ${escAttr(lang)} / 期間: ${escAttr(label)}</div>
 <div class="summary">
   <div class="box"><div class="label">視聴時間</div><div class="value">${escAttr(fmt(totalWatch))}</div></div>
   <div class="box"><div class="label">発話時間</div><div class="value">${escAttr(fmt(totalSpeak))}</div></div>
   <div class="box"><div class="label">発話率</div><div class="value">${ratio}%</div></div>
-  <div class="box"><div class="label">学習日</div><div class="value">${rows.filter(row => row.watch || row.speak || row.memo.trim()).length}/7</div></div>
+  <div class="box"><div class="label">学習日</div><div class="value">${rows.filter(row => row.watch || row.speak || row.memo.trim()).length}/${rows.length}</div></div>
 </div>
-<h2>7日間の推移</h2>
-<div class="chart"><img src="${chartImage}" alt="7日間の視聴時間と発話時間のグラフ"></div>
+<h2>${escAttr(label)}の推移</h2>
+<div class="chart"><img src="${chartImage}" alt="${escAttr(label)}の視聴時間と発話時間のグラフ"></div>
 <h2>今日のメモ</h2>
 <div class="memo">${escAttr(memo || "記録なし")}</div>
 <h2>日別ログ</h2>
@@ -726,6 +851,7 @@ th{background:#f3f6fa}
 function saveMemo(){
   localStorage.setItem("el_memo_" + today(), document.getElementById("today-memo").value);
   renderDashboard();
+  if(document.getElementById("journal-modal").classList.contains("open")) renderJournal();
 }
 
 function updateClock(){
@@ -754,7 +880,7 @@ function startMemoVoice(){
     return;
   }
   memoRecognition = new SpeechRecognition();
-  memoRecognition.lang = navigator.language || "ja-JP";
+  memoRecognition.lang = memoVoiceLang || "ja-JP";
   memoRecognition.continuous = true;
   memoRecognition.interimResults = true;
   memoVoiceOn = true;
@@ -802,6 +928,15 @@ function stopMemoVoice(){
   }
 }
 
+function setMemoVoiceLang(lang){
+  memoVoiceLang = lang || "ja-JP";
+  localStorage.setItem("ll_memo_voice_lang", memoVoiceLang);
+  if(memoVoiceOn){
+    stopMemoVoice();
+    startMemoVoice();
+  }
+}
+
 function insertMemoText(text){
   const memo = document.getElementById("today-memo");
   const prefix = memo.value && !memo.value.endsWith("\n") ? "\n" : "";
@@ -812,6 +947,156 @@ function insertMemoText(text){
   const cursor = start + insert.length;
   memo.setSelectionRange(cursor, cursor);
   saveMemo();
+}
+
+function openJournal(){
+  document.getElementById("journal-modal").classList.add("open");
+  renderJournal();
+}
+
+function closeJournal(){
+  document.getElementById("journal-modal").classList.remove("open");
+}
+
+function closeJournalOutside(e){
+  if(e.target === document.getElementById("journal-modal")) closeJournal();
+}
+
+function getJournalEntries(range){
+  const keys = getAvailableDateKeys();
+  const filtered = range === "all" ? keys : keys.filter(key => {
+    const days = parseInt(range, 10) || 30;
+    const start = dateKey(addDays(new Date(), -(days - 1)));
+    return key >= start;
+  });
+  return filtered.reverse().map(key => {
+    const watch = parseInt(localStorage.getItem("el_tw_" + key) || "0", 10);
+    const speak = parseInt(localStorage.getItem("el_ts_" + key) || "0", 10);
+    const memo = localStorage.getItem("el_memo_" + key) || "";
+    return {key, watch, speak, memo};
+  }).filter(entry => entry.watch || entry.speak || entry.memo.trim());
+}
+
+function renderJournal(){
+  const list = document.getElementById("journal-list");
+  const range = document.getElementById("journal-range").value;
+  const entries = getJournalEntries(range);
+  if(!entries.length){
+    list.innerHTML = '<div class="journal-empty">まだジャーナル履歴がありません。今日のメモを書くとここに残ります。</div>';
+    return;
+  }
+  list.innerHTML = entries.map(entry => {
+    const ratio = entry.watch ? Math.round(entry.speak / entry.watch * 100) : 0;
+    return `
+      <div class="journal-card">
+        <div>
+          <div class="journal-date">${escAttr(entry.key)}</div>
+          <div class="journal-stats">
+            視聴 ${escAttr(fmt(entry.watch))}<br>
+            発話 ${escAttr(fmt(entry.speak))}<br>
+            発話率 ${ratio}%
+          </div>
+        </div>
+        <div class="journal-memo">${escAttr(entry.memo || "メモなし")}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function exportJournalCsv(){
+  const range = document.getElementById("journal-range").value;
+  const entries = getJournalEntries(range).slice().reverse();
+  if(!entries.length){
+    alert("出力できるジャーナル履歴がありません。");
+    return;
+  }
+  const header = ["date","watch_seconds","speak_seconds","watch_time","speak_time","speak_ratio","memo"];
+  const lines = [header.join(",")];
+  entries.forEach(entry => {
+    const ratio = entry.watch ? Math.round(entry.speak / entry.watch * 100) : 0;
+    lines.push([
+      entry.key,
+      entry.watch,
+      entry.speak,
+      fmt(entry.watch),
+      fmt(entry.speak),
+      ratio + "%",
+      entry.memo
+    ].map(csvCell).join(","));
+  });
+  downloadText(`lingolog-journal-${today()}.csv`, "\ufeff" + lines.join("\n"), "text/csv;charset=utf-8");
+}
+
+function csvCell(value){
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadText(filename, text, type){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function openJournalPrint(){
+  const range = document.getElementById("journal-range").value;
+  const entries = getJournalEntries(range);
+  if(!entries.length){
+    alert("出力できるジャーナル履歴がありません。");
+    return;
+  }
+  const label = range === "all" ? "全期間" : `直近${range}日`;
+  const totalWatch = entries.reduce((sum, entry) => sum + entry.watch, 0);
+  const totalSpeak = entries.reduce((sum, entry) => sum + entry.speak, 0);
+  const html = entries.map(entry => {
+    const ratio = entry.watch ? Math.round(entry.speak / entry.watch * 100) : 0;
+    return `
+      <section class="entry">
+        <h2>${escAttr(entry.key)}</h2>
+        <div class="stats">視聴 ${escAttr(fmt(entry.watch))} / 発話 ${escAttr(fmt(entry.speak))} / 発話率 ${ratio}%</div>
+        <p>${escAttr(entry.memo || "メモなし")}</p>
+      </section>`;
+  }).join("");
+  const report = window.open("", "_blank");
+  if(!report){
+    alert("レポート画面を開けませんでした。ポップアップ許可を確認してください。");
+    return;
+  }
+  report.document.write(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>LingoLog Journal</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;margin:32px;line-height:1.65}
+h1{font-size:24px;margin:0 0 4px}.meta{color:#5f6b7a;font-size:12px;margin-bottom:20px}
+.summary{display:flex;gap:10px;margin-bottom:20px}.box{border:1px solid #d8dee8;border-radius:8px;padding:10px 14px}
+.label{font-size:11px;color:#5f6b7a}.value{font-weight:700;font-size:18px}.entry{break-inside:avoid;border-top:1px solid #d8dee8;padding:14px 0}
+.entry h2{font-size:16px;margin:0 0 4px}.stats{font-size:12px;color:#5f6b7a;margin-bottom:8px}.entry p{white-space:pre-wrap;margin:0}
+.print{margin:20px 0;padding:8px 14px;border:1px solid #1f6feb;border-radius:6px;background:#1f6feb;color:#fff}
+@media print{.print{display:none}body{margin:18mm}}
+</style>
+</head>
+<body>
+<h1>LingoLog ジャーナル</h1>
+<div class="meta">期間: ${escAttr(label)} / 作成日時: ${escAttr(new Date().toLocaleString("ja-JP"))}</div>
+<div class="summary">
+  <div class="box"><div class="label">記録日数</div><div class="value">${entries.length}</div></div>
+  <div class="box"><div class="label">視聴時間</div><div class="value">${escAttr(fmt(totalWatch))}</div></div>
+  <div class="box"><div class="label">発話時間</div><div class="value">${escAttr(fmt(totalSpeak))}</div></div>
+</div>
+${html}
+<button class="print" onclick="window.print()">PDFとして保存</button>
+</body>
+</html>`);
+  report.document.close();
+  report.focus();
 }
 
 function openSettings(){
@@ -1002,6 +1287,8 @@ function showPlaylistError(message){
   document.getElementById("h-watch").textContent = fmt(todayW);
   document.getElementById("h-speak").textContent = fmt(todayS);
   document.getElementById("mic-threshold").value = String(speechThreshold);
+  document.getElementById("memo-voice-lang").value = memoVoiceLang;
+  document.getElementById("chart-range").value = chartRange;
   document.getElementById("today-memo").value = localStorage.getItem("el_memo_" + today()) || "";
   applyLang(localStorage.getItem("ll_lang") || "");
   document.getElementById("source-badge").textContent = localStorage.getItem("ll_videos") ? "保存済み" : "ダミー";
@@ -1011,7 +1298,12 @@ function showPlaylistError(message){
   if(localStorage.getItem("ll_playlist")) loadPlaylistPreview(false);
 })();
 
-document.addEventListener("keydown", e => { if(e.key === "Escape") closeSettings(); });
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    closeSettings();
+    closeJournal();
+  }
+});
 window.addEventListener("resize", renderDashboard);
 window.addEventListener("beforeunload", () => {
   stopWatchTimer();
