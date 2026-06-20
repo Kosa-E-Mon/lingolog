@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LingoLog</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel-2:#1c2128;--border:#30363d;
+  --text:#c9d1d9;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;
+  --amber:#e3b341;--danger:#f85149;--mono:"JetBrains Mono","Courier New",monospace;
+}
+body{height:100vh;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.logo{font-size:15px;font-weight:700;letter-spacing:1px;color:var(--accent)}
+.logo span{color:var(--text);font-weight:400}
+.hstats{display:flex;align-items:center;gap:18px;min-width:0}
+.hstat{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);white-space:nowrap}
+.hstat-val{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:600}
+main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+.panel:last-child{border-right:none;border-left:1px solid var(--border)}
+.panel-center{display:flex;flex-direction:column;overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.ph-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.scroll{flex:1;overflow-y:auto}
+.scroll::-webkit-scrollbar{width:4px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.vcard{display:flex;gap:8px;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;position:relative}
+.vcard:hover{background:var(--panel-2)}
+.vcard.active{background:var(--panel-2);box-shadow:inset 2px 0 0 var(--accent)}
+.thumb{width:72px;height:40px;flex-shrink:0;background:#21262d;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.vinfo{flex:1;min-width:0}
+.vtitle{font-size:11px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
+.vmeta{font-size:10px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid transparent}
+.badge-new{background:rgba(63,185,80,.12);color:var(--green);border-color:rgba(63,185,80,.3)}
+.badge-pin{background:rgba(88,166,255,.12);color:var(--accent);border-color:rgba(88,166,255,.25)}
+.badge-warn{background:rgba(227,179,65,.12);color:var(--amber);border-color:rgba(227,179,65,.3)}
+.rm-btn{position:absolute;top:6px;right:6px;background:transparent;border:none;color:var(--muted);font-size:14px;line-height:1;padding:1px 4px;border-radius:3px;opacity:0;transition:opacity .15s}
+.vcard:hover .rm-btn{opacity:1}
+.rm-btn:hover{background:rgba(248,81,73,.15);color:var(--danger)}
+.add-pin-wrap,.sync-wrap{padding:8px 10px;flex-shrink:0}
+.sync-wrap{display:flex;flex-direction:column;gap:8px}
+.ghost-btn{width:100%;padding:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);border-radius:6px;font-size:11px;transition:all .15s}
+.ghost-btn:hover{border-color:var(--accent);color:var(--accent)}
+.solid-btn{width:100%;padding:7px 10px;border:1px solid rgba(88,166,255,.35);background:rgba(88,166,255,.12);color:var(--accent);border-radius:6px;font-size:11px;font-weight:700}
+.solid-btn:disabled{opacity:.55;cursor:not-allowed}
+.empty-msg,.status-msg{padding:14px 10px;font-size:11px;color:var(--muted);text-align:center;line-height:1.65}
+.status-msg.error{color:#ffb4ae;text-align:left}
+.panel-footer{flex-shrink:0;border-top:1px solid var(--border);padding:8px 10px}
+.settings-btn{display:flex;align-items:center;gap:7px;padding:6px 8px;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted);font-size:11px;transition:all .15s;width:100%}
+.settings-btn:hover{background:var(--panel-2);border-color:var(--border);color:var(--text)}
+.player-wrap{background:#000;flex-shrink:0}
+#yt-player{display:block;width:100%;aspect-ratio:16/9;border:none}
+.player-info{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.player-title{font-size:13px;font-weight:600;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-actions{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.open-youtube-btn{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border:1px solid rgba(88,166,255,.35);border-radius:6px;background:rgba(88,166,255,.12);color:var(--accent);font-size:11px;font-weight:700;text-decoration:none}
+.open-youtube-btn:hover{border-color:var(--accent)}
+.small-action{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px}
+.small-action:hover{border-color:var(--accent);color:var(--accent)}
+.pstats{display:flex;align-items:flex-end;gap:8px}
+.pstat{flex:1;padding:6px 10px;background:var(--panel);border-radius:6px;min-width:0}
+.pstat-label{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:2px}
+.pstat-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber)}
+.pstat-val.green{color:var(--green)}
+.mic-wrap{display:flex;align-items:flex-end;flex-direction:column;gap:4px;flex-shrink:0}
+.mic-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:600;transition:all .15s;white-space:nowrap}
+.mic-btn:hover,.mic-btn.on{border-color:var(--green);color:var(--green)}
+.mic-btn.on{background:rgba(63,185,80,.08)}
+.mic-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.mic-btn.on .mic-dot{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.memo-area{padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.memo-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.memo-input{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;resize:none;outline:none;line-height:1.5;min-height:70px}
+.memo-input::placeholder{color:var(--muted)}
+.memo-input:focus{border-color:rgba(88,166,255,.5)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:10px;width:430px;max-width:92vw;padding:20px;display:flex;flex-direction:column;gap:14px}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:700}
+.modal-close{background:transparent;border:none;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:4px}
+.modal-close:hover{color:var(--text);background:var(--panel-2)}
+.setting-row{display:flex;flex-direction:column;gap:5px}
+.setting-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+.setting-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;outline:none;width:100%}
+.setting-input:focus{border-color:rgba(88,166,255,.5)}
+.setting-note{font-size:10px;color:var(--muted);line-height:1.6}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px}
+.modal-save{padding:7px 18px;background:var(--accent);border:none;border-radius:6px;color:#0d1117;font-size:12px;font-weight:700}
+hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
+@media (max-width:860px){
+  body{height:auto;min-height:100vh;overflow:auto}
+  header{align-items:flex-start;flex-direction:column}
+  .hstats{flex-wrap:wrap}
+  main{display:flex;flex-direction:column;overflow:visible}
+  .panel,.panel:last-child{border-left:none;border-right:none;border-bottom:1px solid var(--border);min-height:220px}
+  .panel-center{min-height:520px}
+}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">LINGO<span>LOG</span></span>
+  <div class="hstats">
+    <div class="hstat">今日の視聴 <span class="hstat-val" id="h-watch">00:00:00</span></div>
+    <div class="hstat">今日の発話 <span class="hstat-val" id="h-speak">00:00:00</span></div>
+    <div class="hstat" id="h-lang-wrap" hidden>学習言語 <span class="hstat-val" id="h-lang"></span></div>
+    <div class="hstat" id="h-date"></div>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="ph">
+      <span class="ph-title">固定リスト</span>
+      <span style="font-size:10px;color:var(--muted)" id="pin-count"></span>
+    </div>
+    <div class="scroll" id="pinned-list"></div>
+    <div class="add-pin-wrap">
+      <button class="ghost-btn" onclick="addPin()">現在の動画を固定</button>
+    </div>
+    <div class="panel-footer">
+      <button class="settings-btn" onclick="openSettings()">設定</button>
+    </div>
+  </div>
+
+  <div class="panel-center">
+    <div class="player-wrap">
+      <iframe id="yt-player"
+        src="about:blank"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
+    <div class="player-info">
+      <div class="player-title" id="player-title">右の再生リストから動画を選んでください</div>
+      <div class="player-actions" id="player-actions" hidden>
+        <a class="open-youtube-btn" id="open-youtube-link" href="#" target="_blank" rel="noopener">YouTubeで開く</a>
+        <button class="small-action" id="retry-embed-btn" onclick="tryAlternateEmbed()">埋め込みを再試行</button>
+      </div>
+      <div class="pstats">
+        <div class="pstat">
+          <div class="pstat-label">この動画の視聴</div>
+          <div class="pstat-val" id="v-watch">00:00:00</div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-label">この動画の発話</div>
+          <div class="pstat-val green" id="v-speak">00:00:00</div>
+        </div>
+        <div class="mic-wrap">
+          <button class="mic-btn" id="mic-btn" onclick="toggleMic()">
+            <span class="mic-dot"></span>マイク OFF
+          </button>
+          <span style="font-size:9px;color:var(--muted)">シャドーイング用</span>
+        </div>
+      </div>
+    </div>
+    <div class="memo-area">
+      <span class="memo-label">今日のメモ</span>
+      <textarea class="memo-input" id="today-memo" placeholder="今日の学習で気づいたこと、難しかった表現、次に復習したいことなど" oninput="saveMemo()"></textarea>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <span class="ph-title">再生リスト</span>
+      <span class="badge badge-warn" id="source-badge">ダミー</span>
+    </div>
+    <div class="sync-wrap">
+      <button class="solid-btn" id="preview-btn" onclick="loadPlaylistPreview()">IDだけで表示</button>
+      <button class="ghost-btn" id="sync-btn" onclick="syncPlaylist()">APIで一覧取得</button>
+    </div>
+    <div class="scroll" id="playlist-list"></div>
+  </div>
+</main>
+
+<div class="modal-bg" id="settings-modal" onclick="closeSettingsOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">設定</span>
+      <button class="modal-close" onclick="closeSettings()">×</button>
+    </div>
+    <hr class="mdivider">
+    <div class="setting-row">
+      <span class="setting-label">YouTube 再生リスト ID</span>
+      <input class="setting-input" id="s-playlist" type="text" placeholder="例: PLxxxxxxxxxxxxxxxx">
+      <span class="setting-note">再生リストURLの「list=」以降を入れてください。URLをそのまま貼っても保存時にIDだけ取り出します。</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">YouTube API キー</span>
+      <input class="setting-input" id="s-apikey" type="password" placeholder="AIza...">
+      <span class="setting-note">ブラウザ内にだけ保存します。39文字前後で、Google Cloud側で YouTube Data API v3 を有効にしてください。</span>
+    </div>
+    <hr class="mdivider">
+    <div class="setting-row">
+      <span class="setting-label">表示する学習言語</span>
+      <input class="setting-input" id="s-lang" type="text" placeholder="例: English / Français / 한국어">
+      <span class="setting-note">任意です。ヘッダーに表示されます。</span>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-btn" style="width:auto;border-style:solid" onclick="closeSettings()">閉じる</button>
+      <button class="modal-save" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEMO_VIDEOS = [
+  {id:"WY-VV_NjS7A", title:"Daily English: Greetings & Small Talk", dur:"3:24", isNew:true},
+  {id:"BXgp70Kdn_Q", title:"How to Order at a Restaurant in English", dur:"4:12", isNew:true},
+  {id:"ZfEFoTGUs3M", title:"Asking for Directions - Natural Phrases", dur:"5:01", isNew:false},
+  {id:"lHGH-FJAQ9A", title:"Shopping in English: Common Expressions", dur:"6:33", isNew:false},
+  {id:"OGgF5WkKnkI", title:"Travel English: At the Airport", dur:"4:58", isNew:false}
+];
+const DEFAULT_PLAYLIST_ID = "PLRKUQBQ0GE5CsMnk5J7GxQswn-qcNx90_";
+const TEST_PLAYLIST_IDS = ["PL12345678901234567890"];
+const EMBED_HOSTS = ["www.youtube.com", "www.youtube-nocookie.com"];
+let embedHostIndex = 0;
+
+let videos = loadVideos();
+let pins = JSON.parse(localStorage.getItem("el_pins") || "[]");
+let current = null;
+let watchTimer = null;
+let speakTimer = null;
+let micOn = false;
+let todayW = parseInt(localStorage.getItem("el_tw_" + today()) || "0", 10);
+let todayS = parseInt(localStorage.getItem("el_ts_" + today()) || "0", 10);
+let vidW = 0;
+let vidS = 0;
+
+function today(){return new Date().toISOString().slice(0,10)}
+function fmt(s){
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
+  return [h,m,sc].map(v => String(v).padStart(2,"0")).join(":");
+}
+function escAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function loadVideos(){
+  try{
+    const saved = JSON.parse(localStorage.getItem("ll_videos") || "null");
+    return Array.isArray(saved) && saved.length ? saved : DEMO_VIDEOS;
+  }catch{
+    return DEMO_VIDEOS;
+  }
+}
+
+function setPlayerSrc(src){
+  const iframe = document.getElementById("yt-player");
+  iframe.src = src;
+}
+
+function youtubeEmbedUrl(path, params){
+  const url = new URL(`https://${EMBED_HOSTS[embedHostIndex]}/embed/${path}`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  if(location.origin && location.origin !== "null"){
+    url.searchParams.set("origin", location.origin);
+    url.searchParams.set("widget_referrer", location.href);
+  }
+  return url.toString();
+}
+
+function playlistWatchUrl(playlistId){
+  return `https://www.youtube.com/playlist?list=${encodeURIComponent(playlistId)}`;
+}
+
+function updatePlaylistActions(playlistId){
+  const actions = document.getElementById("player-actions");
+  const link = document.getElementById("open-youtube-link");
+  if(!playlistId){
+    actions.hidden = true;
+    return;
+  }
+  link.href = playlistWatchUrl(playlistId);
+  actions.hidden = false;
+}
+
+function tryAlternateEmbed(){
+  embedHostIndex = (embedHostIndex + 1) % EMBED_HOSTS.length;
+  loadPlaylistPreview();
+}
+
+function renderList(){
+  const el = document.getElementById("playlist-list");
+  if(!videos.length){
+    el.innerHTML = '<div class="empty-msg">設定から再生リストIDとAPIキーを入れて同期してください。</div>';
+    return;
+  }
+  el.innerHTML = videos.map(v => `
+    <div class="vcard${current === v.id ? " active" : ""}" onclick="playVideo('${escAttr(v.id)}')">
+      <div class="thumb"><img src="${escAttr(v.thumb || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`)}" alt="" loading="lazy" onerror="this.remove()"></div>
+      <div class="vinfo">
+        <div class="vtitle">${escAttr(v.title)}</div>
+        <div class="vmeta">${v.isNew ? '<span class="badge badge-new">NEW</span>' : ""}<span>${escAttr(v.dur || "YouTube")}</span></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderPins(){
+  const el = document.getElementById("pinned-list");
+  const list = videos.filter(v => pins.includes(v.id));
+  document.getElementById("pin-count").textContent = list.length ? list.length + "件" : "";
+  if(!list.length){
+    el.innerHTML = '<div class="empty-msg">動画を選んで<br>「現在の動画を固定」で<br>ここに残せます。</div>';
+    return;
+  }
+  el.innerHTML = list.map(v => `
+    <div class="vcard${current === v.id ? " active" : ""}" onclick="playVideo('${escAttr(v.id)}')">
+      <div class="thumb"><img src="${escAttr(v.thumb || `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`)}" alt="" loading="lazy" onerror="this.remove()"></div>
+      <div class="vinfo">
+        <div class="vtitle">${escAttr(v.title)}</div>
+        <div class="vmeta"><span class="badge badge-pin">固定</span></div>
+      </div>
+      <button class="rm-btn" onclick="event.stopPropagation();removePin('${escAttr(v.id)}')" title="固定を外す">×</button>
+    </div>
+  `).join("");
+}
+
+function playVideo(id){
+  const video = videos.find(v => v.id === id);
+  current = id;
+  document.getElementById("player-title").textContent = video ? video.title : "YouTube 動画";
+  vidW = parseInt(localStorage.getItem("el_vw_" + id) || "0", 10);
+  vidS = parseInt(localStorage.getItem("el_vs_" + id) || "0", 10);
+  document.getElementById("v-watch").textContent = fmt(vidW);
+  document.getElementById("v-speak").textContent = fmt(vidS);
+  setPlayerSrc(youtubeEmbedUrl(encodeURIComponent(id), {autoplay:"1", rel:"0"}));
+  startWatchTimer();
+  renderList();
+  renderPins();
+}
+
+function startWatchTimer(){
+  if(watchTimer || !current) return;
+  watchTimer = setInterval(() => {
+    vidW++;
+    todayW++;
+    document.getElementById("v-watch").textContent = fmt(vidW);
+    document.getElementById("h-watch").textContent = fmt(todayW);
+    localStorage.setItem("el_vw_" + current, String(vidW));
+    localStorage.setItem("el_tw_" + today(), String(todayW));
+  }, 1000);
+}
+
+function stopWatchTimer(){
+  if(watchTimer) clearInterval(watchTimer);
+  watchTimer = null;
+}
+
+function addPin(){
+  if(!current){ alert("まず動画を選んでください。"); return; }
+  if(!pins.includes(current)){
+    pins.push(current);
+    localStorage.setItem("el_pins", JSON.stringify(pins));
+    renderPins();
+  }
+}
+
+function removePin(id){
+  pins = pins.filter(p => p !== id);
+  localStorage.setItem("el_pins", JSON.stringify(pins));
+  renderPins();
+}
+
+function toggleMic(){
+  micOn = !micOn;
+  const btn = document.getElementById("mic-btn");
+  if(micOn){
+    btn.classList.add("on");
+    btn.innerHTML = '<span class="mic-dot"></span>マイク ON';
+    if(!speakTimer){
+      speakTimer = setInterval(() => {
+        if(!current) return;
+        vidS++;
+        todayS++;
+        document.getElementById("v-speak").textContent = fmt(vidS);
+        document.getElementById("h-speak").textContent = fmt(todayS);
+        localStorage.setItem("el_vs_" + current, String(vidS));
+        localStorage.setItem("el_ts_" + today(), String(todayS));
+      }, 1000);
+    }
+  }else{
+    btn.classList.remove("on");
+    btn.innerHTML = '<span class="mic-dot"></span>マイク OFF';
+    if(speakTimer) clearInterval(speakTimer);
+    speakTimer = null;
+  }
+}
+
+function saveMemo(){
+  localStorage.setItem("el_memo_" + today(), document.getElementById("today-memo").value);
+}
+
+function openSettings(){
+  document.getElementById("settings-modal").classList.add("open");
+  document.getElementById("s-playlist").value = localStorage.getItem("ll_playlist") || "";
+  document.getElementById("s-apikey").value = localStorage.getItem("ll_apikey") || "";
+  document.getElementById("s-lang").value = localStorage.getItem("ll_lang") || "";
+}
+function closeSettings(){document.getElementById("settings-modal").classList.remove("open")}
+function closeSettingsOutside(e){if(e.target === document.getElementById("settings-modal")) closeSettings()}
+
+function saveSettings(){
+  const playlist = normalizePlaylistId(document.getElementById("s-playlist").value.trim());
+  const apiKey = document.getElementById("s-apikey").value.trim();
+  const lang = document.getElementById("s-lang").value.trim();
+  localStorage.setItem("ll_playlist", playlist);
+  localStorage.setItem("ll_apikey", apiKey);
+  localStorage.setItem("ll_lang", lang);
+  applyLang(lang);
+  closeSettings();
+  if(playlist) loadPlaylistPreview();
+}
+
+function applyLang(lang){
+  const wrap = document.getElementById("h-lang-wrap");
+  document.getElementById("h-lang").textContent = lang;
+  wrap.hidden = !lang;
+}
+
+function normalizePlaylistId(input){
+  if(!input) return "";
+  try{
+    const url = new URL(input);
+    return url.searchParams.get("list") || input;
+  }catch{
+    const match = input.match(/[?&]list=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : input;
+  }
+}
+
+function getSavedPlaylistId(){
+  const saved = normalizePlaylistId(localStorage.getItem("ll_playlist") || "");
+  if(!saved || TEST_PLAYLIST_IDS.includes(saved)) return DEFAULT_PLAYLIST_ID;
+  return saved;
+}
+
+function loadPlaylistPreview(showMessage = true){
+  const playlistId = getSavedPlaylistId();
+  localStorage.setItem("ll_playlist", playlistId);
+  const badge = document.getElementById("source-badge");
+  if(!playlistId){
+    openSettings();
+    showPlaylistError("まず再生リストIDを設定してください。APIキーは空のままで大丈夫です。");
+    return;
+  }
+  stopWatchTimer();
+  current = null;
+  vidW = 0;
+  vidS = 0;
+  document.getElementById("v-watch").textContent = fmt(0);
+  document.getElementById("v-speak").textContent = fmt(0);
+  document.getElementById("player-title").textContent = "YouTube 再生リストを読み込み中";
+  updatePlaylistActions(playlistId);
+  badge.textContent = "APIなし";
+  badge.className = "badge badge-warn";
+  const embedUrl = youtubeEmbedUrl("videoseries", {list:playlistId, rel:"0"});
+  setPlayerSrc(embedUrl);
+  if(showMessage){
+    document.getElementById("playlist-list").innerHTML = `
+      <div class="status-msg">
+        APIキーなしで、中央のYouTubeプレーヤーに再生リストを読み込みました。<br><br>
+        エラー153が出る場合は、このブラウザでYouTube埋め込みが拒否されています。上の「YouTubeで開く」から再生してください。<br><br>
+        右側にタイトル付きの一覧を自前表示する段階で、YouTube Data APIキーを使います。<br><br>
+        埋め込みURL: ${escAttr(embedUrl)}<br><br>
+        <a href="${escAttr(playlistWatchUrl(playlistId))}" target="_blank" rel="noopener" style="color:var(--accent)">YouTubeで再生リストを開く</a>
+      </div>`;
+  }
+}
+
+async function syncPlaylist(){
+  const playlistId = getSavedPlaylistId();
+  localStorage.setItem("ll_playlist", playlistId);
+  const apiKey = localStorage.getItem("ll_apikey") || "";
+  const btn = document.getElementById("sync-btn");
+  const badge = document.getElementById("source-badge");
+  const list = document.getElementById("playlist-list");
+  if(!playlistId || !apiKey){
+    openSettings();
+    showPlaylistError("再生リストIDとAPIキーを設定してください。");
+    return;
+  }
+  if(!/^AIza[0-9A-Za-z_-]{20,}$/.test(apiKey)){
+    showPlaylistError("APIキーの形式が違うようです。AIza で始まるキーを、前後の空白なしで貼り直してください。");
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "同期中...";
+  badge.textContent = "同期中";
+  badge.className = "badge badge-warn";
+  list.innerHTML = '<div class="status-msg">YouTube から再生リストを読み込んでいます。</div>';
+  try{
+    const items = await fetchAllPlaylistItems(playlistId, apiKey);
+    videos = items.map((item, index) => {
+      const snippet = item.snippet || {};
+      const resource = snippet.resourceId || {};
+      const thumb = snippet.thumbnails && (snippet.thumbnails.medium || snippet.thumbnails.default);
+      return {
+        id:resource.videoId,
+        title:snippet.title || "Untitled",
+        dur:"YouTube",
+        thumb:thumb ? thumb.url : "",
+        isNew:index < 3
+      };
+    }).filter(v => v.id && !/private video|deleted video/i.test(v.title));
+    if(!videos.length) throw new Error("再生できる動画が見つかりませんでした。非公開・削除済み動画だけの可能性があります。");
+    localStorage.setItem("ll_videos", JSON.stringify(videos));
+    badge.textContent = "同期済み";
+    badge.className = "badge badge-new";
+    renderList();
+    renderPins();
+  }catch(error){
+    showPlaylistError(explainYouTubeError(error));
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "再生リストを同期";
+  }
+}
+
+async function fetchAllPlaylistItems(playlistId, apiKey){
+  let pageToken = "";
+  const items = [];
+  do{
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("maxResults", "50");
+    url.searchParams.set("playlistId", playlistId);
+    url.searchParams.set("key", apiKey);
+    if(pageToken) url.searchParams.set("pageToken", pageToken);
+    const response = await fetch(url.toString());
+    const data = await response.json().catch(() => ({}));
+    if(!response.ok){
+      const reason = data.error && data.error.errors && data.error.errors[0] && data.error.errors[0].reason;
+      const message = data.error && data.error.message;
+      throw new Error([reason, message].filter(Boolean).join(": ") || "YouTube API request failed");
+    }
+    items.push(...(data.items || []));
+    pageToken = data.nextPageToken || "";
+  }while(pageToken);
+  return items;
+}
+
+function explainYouTubeError(error){
+  const message = String(error && error.message ? error.message : error);
+  if(message.includes("API_KEY_INVALID") || message.includes("keyInvalid")){
+    return "API_KEY_INVALID: APIキーが正しくありません。キー全体をコピーできているか、Google Cloud Consoleで YouTube Data API v3 が有効か確認してください。";
+  }
+  if(message.includes("accessNotConfigured")){
+    return "YouTube Data API v3 がまだ有効になっていません。Google Cloud Console のAPIライブラリで有効化してください。";
+  }
+  if(message.includes("referer") || message.includes("Referer") || message.includes("API_KEY_HTTP_REFERRER_BLOCKED")){
+    return "APIキーのHTTPリファラー制限でブロックされています。GitHub PagesのURL、またはローカル確認用の http://localhost:* を許可してください。";
+  }
+  if(message.includes("playlistNotFound") || message.includes("notFound")){
+    return "再生リストが見つかりません。IDが正しいか、公開または限定公開の再生リストか確認してください。";
+  }
+  if(message.includes("quotaExceeded")){
+    return "YouTube APIの利用上限に達しています。しばらく待つか、Google Cloud側の割り当てを確認してください。";
+  }
+  if(message.includes("Failed to fetch")){
+    return "通信に失敗しました。ネットワーク、ブラウザの拡張機能、APIキーのリファラー制限を確認してください。";
+  }
+  return message;
+}
+
+function showPlaylistError(message){
+  const badge = document.getElementById("source-badge");
+  badge.textContent = "エラー";
+  badge.className = "badge badge-warn";
+  document.getElementById("playlist-list").innerHTML = `<div class="status-msg error">${escAttr(message)}<br><br>設定を直したら、もう一度「再生リストを同期」を押してください。</div>`;
+}
+
+(function init(){
+  localStorage.setItem("ll_playlist", getSavedPlaylistId());
+  const d = new Date();
+  document.getElementById("h-date").textContent = d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"});
+  document.getElementById("h-watch").textContent = fmt(todayW);
+  document.getElementById("h-speak").textContent = fmt(todayS);
+  document.getElementById("today-memo").value = localStorage.getItem("el_memo_" + today()) || "";
+  applyLang(localStorage.getItem("ll_lang") || "");
+  document.getElementById("source-badge").textContent = localStorage.getItem("ll_videos") ? "保存済み" : "ダミー";
+  renderList();
+  renderPins();
+  if(localStorage.getItem("ll_playlist")) loadPlaylistPreview(false);
+})();
+
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeSettings(); });
+window.addEventListener("beforeunload", () => {
+  stopWatchTimer();
+  if(speakTimer) clearInterval(speakTimer);
+});
+</script>
+</body>
+</html>
