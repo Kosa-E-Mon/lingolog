@@ -75,12 +75,31 @@ main{display:grid;grid-template-columns:200px minmax(360px,1fr) 250px;flex:1;ove
 .mic-btn.on{background:rgba(63,185,80,.08)}
 .mic-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
 .mic-btn.on .mic-dot{animation:pulse 1.2s ease-in-out infinite}
+.mic-meter{width:116px;height:5px;background:#21262d;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.mic-meter span{display:block;width:0;height:100%;background:var(--green);transition:width .08s linear}
+.mic-status{font-size:9px;color:var(--muted);max-width:132px;text-align:right;line-height:1.35}
+.mic-status.speaking{color:var(--green)}
+.mic-threshold{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted)}
+.mic-threshold input{width:78px;accent-color:var(--green)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.memo-area{padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.memo-area{padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:8px;overflow:hidden}
 .memo-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.memo-input{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;resize:none;outline:none;line-height:1.5;min-height:70px}
+.memo-input{flex:1 1 120px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-size:12px;resize:none;outline:none;line-height:1.5;min-height:70px}
 .memo-input::placeholder{color:var(--muted)}
 .memo-input:focus{border-color:rgba(88,166,255,.5)}
+.insights{flex:0 0 auto;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.insights-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.insights-title{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.insights-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mini-btn{padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;font-weight:600}
+.mini-btn:hover{border-color:var(--accent);color:var(--accent)}
+.chart-wrap{height:132px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px}
+#progress-chart{display:block;width:100%;height:100%}
+.summary-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.summary-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 8px;min-width:0}
+.summary-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);margin-top:2px}
+.summary-val.green{color:var(--green)}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:10px;width:430px;max-width:92vw;padding:20px;display:flex;flex-direction:column;gap:14px}
@@ -160,13 +179,48 @@ hr.mdivider{border:none;border-top:1px solid var(--border);margin:0}
           <button class="mic-btn" id="mic-btn" onclick="toggleMic()">
             <span class="mic-dot"></span>マイク OFF
           </button>
-          <span style="font-size:9px;color:var(--muted)">シャドーイング用</span>
+          <div class="mic-meter" aria-hidden="true"><span id="mic-level"></span></div>
+          <span class="mic-status" id="mic-status">声を検知した時間だけ記録</span>
+          <label class="mic-threshold">
+            感度
+            <input id="mic-threshold" type="range" min="0.02" max="0.35" step="0.01" oninput="updateMicThreshold(this.value)">
+          </label>
         </div>
       </div>
     </div>
     <div class="memo-area">
       <span class="memo-label">今日のメモ</span>
       <textarea class="memo-input" id="today-memo" placeholder="今日の学習で気づいたこと、難しかった表現、次に復習したいことなど" oninput="saveMemo()"></textarea>
+      <div class="insights">
+        <div class="insights-head">
+          <span class="insights-title">7日間の推移</span>
+          <div class="insights-actions">
+            <button class="mini-btn" onclick="renderDashboard()">更新</button>
+            <button class="mini-btn" onclick="openPdfReport()">PDF用レポート</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="progress-chart" width="760" height="180"></canvas>
+        </div>
+        <div class="summary-row">
+          <div class="summary-item">
+            <div class="summary-label">7日視聴</div>
+            <div class="summary-val" id="sum-watch">00:00:00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">7日発話</div>
+            <div class="summary-val green" id="sum-speak">00:00:00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">発話率</div>
+            <div class="summary-val" id="sum-ratio">0%</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">学習日</div>
+            <div class="summary-val" id="sum-days">0/7</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -232,16 +286,43 @@ let current = null;
 let watchTimer = null;
 let speakTimer = null;
 let micOn = false;
+let micStream = null;
+let audioContext = null;
+let analyser = null;
+let micAnimation = null;
+let micLevel = 0;
+let isSpeaking = false;
+let speechThreshold = parseFloat(localStorage.getItem("ll_mic_threshold") || "0.12");
 let todayW = parseInt(localStorage.getItem("el_tw_" + today()) || "0", 10);
 let todayS = parseInt(localStorage.getItem("el_ts_" + today()) || "0", 10);
 let vidW = 0;
 let vidS = 0;
 
-function today(){return new Date().toISOString().slice(0,10)}
+function dateKey(date = new Date()){
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0,10);
+}
+function today(){return dateKey()}
+function addDays(date, days){
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+function shortDateLabel(key){
+  const [, month, day] = key.split("-");
+  return `${Number(month)}/${Number(day)}`;
+}
 function fmt(s){
   s = Math.max(0, Math.floor(s));
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
   return [h,m,sc].map(v => String(v).padStart(2,"0")).join(":");
+}
+function fmtHM(s){
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if(h) return `${h}h ${m}m`;
+  return `${m}m`;
 }
 function escAttr(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function loadVideos(){
@@ -348,6 +429,7 @@ function startWatchTimer(){
     document.getElementById("h-watch").textContent = fmt(todayW);
     localStorage.setItem("el_vw_" + current, String(vidW));
     localStorage.setItem("el_tw_" + today(), String(todayW));
+    renderDashboard();
   }, 1000);
 }
 
@@ -372,32 +454,265 @@ function removePin(id){
 }
 
 function toggleMic(){
-  micOn = !micOn;
-  const btn = document.getElementById("mic-btn");
   if(micOn){
+    stopMic();
+  }else{
+    startMic();
+  }
+}
+
+async function startMic(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    alert("このブラウザではマイク入力を使えません。GitHub PagesなどHTTPS上で開いてください。");
+    return;
+  }
+  const btn = document.getElementById("mic-btn");
+  const status = document.getElementById("mic-status");
+  try{
+    btn.disabled = true;
+    btn.innerHTML = '<span class="mic-dot"></span>許可待ち';
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+    });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(micStream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.65;
+    source.connect(analyser);
+    micOn = true;
+    btn.disabled = false;
     btn.classList.add("on");
     btn.innerHTML = '<span class="mic-dot"></span>マイク ON';
-    if(!speakTimer){
-      speakTimer = setInterval(() => {
-        if(!current) return;
-        vidS++;
-        todayS++;
-        document.getElementById("v-speak").textContent = fmt(vidS);
-        document.getElementById("h-speak").textContent = fmt(todayS);
-        localStorage.setItem("el_vs_" + current, String(vidS));
-        localStorage.setItem("el_ts_" + today(), String(todayS));
-      }, 1000);
-    }
-  }else{
+    status.textContent = "音量を監視中";
+    drawMicLevel();
+    speakTimer = setInterval(recordSpeakingSecond, 1000);
+  }catch(error){
+    btn.disabled = false;
     btn.classList.remove("on");
     btn.innerHTML = '<span class="mic-dot"></span>マイク OFF';
-    if(speakTimer) clearInterval(speakTimer);
-    speakTimer = null;
+    status.textContent = "マイク許可が必要です";
+    alert("マイクを開始できませんでした。ブラウザのマイク許可を確認してください。");
+    stopMic();
   }
+}
+
+function stopMic(){
+  micOn = false;
+  isSpeaking = false;
+  const btn = document.getElementById("mic-btn");
+  const status = document.getElementById("mic-status");
+  const meter = document.getElementById("mic-level");
+  btn.disabled = false;
+  btn.classList.remove("on");
+  btn.innerHTML = '<span class="mic-dot"></span>マイク OFF';
+  status.textContent = "声を検知した時間だけ記録";
+  status.classList.remove("speaking");
+  meter.style.width = "0%";
+  if(speakTimer) clearInterval(speakTimer);
+  speakTimer = null;
+  if(micAnimation) cancelAnimationFrame(micAnimation);
+  micAnimation = null;
+  if(micStream){
+    micStream.getTracks().forEach(track => track.stop());
+    micStream = null;
+  }
+  if(audioContext){
+    audioContext.close().catch(() => {});
+    audioContext = null;
+  }
+  analyser = null;
+}
+
+function drawMicLevel(){
+  if(!micOn || !analyser) return;
+  const data = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(data);
+  let sum = 0;
+  for(const value of data){
+    const centered = (value - 128) / 128;
+    sum += centered * centered;
+  }
+  const rms = Math.sqrt(sum / data.length);
+  micLevel = Math.min(1, rms * 4);
+  isSpeaking = micLevel >= speechThreshold;
+  const meter = document.getElementById("mic-level");
+  const status = document.getElementById("mic-status");
+  meter.style.width = Math.round(micLevel * 100) + "%";
+  status.textContent = isSpeaking ? "発話を記録中" : "待機中";
+  status.classList.toggle("speaking", isSpeaking);
+  micAnimation = requestAnimationFrame(drawMicLevel);
+}
+
+function recordSpeakingSecond(){
+  if(!current || !isSpeaking) return;
+  vidS++;
+  todayS++;
+  document.getElementById("v-speak").textContent = fmt(vidS);
+  document.getElementById("h-speak").textContent = fmt(todayS);
+  localStorage.setItem("el_vs_" + current, String(vidS));
+  localStorage.setItem("el_ts_" + today(), String(todayS));
+  renderDashboard();
+}
+
+function updateMicThreshold(value){
+  speechThreshold = parseFloat(value);
+  localStorage.setItem("ll_mic_threshold", String(speechThreshold));
+}
+
+function getDailyStats(days = 7){
+  const end = new Date();
+  const rows = [];
+  for(let offset = days - 1; offset >= 0; offset--){
+    const key = dateKey(addDays(end, -offset));
+    const watch = parseInt(localStorage.getItem("el_tw_" + key) || "0", 10);
+    const speak = parseInt(localStorage.getItem("el_ts_" + key) || "0", 10);
+    const memo = localStorage.getItem("el_memo_" + key) || "";
+    rows.push({key, watch, speak, memo});
+  }
+  return rows;
+}
+
+function renderDashboard(){
+  const rows = getDailyStats(7);
+  const totalWatch = rows.reduce((sum, row) => sum + row.watch, 0);
+  const totalSpeak = rows.reduce((sum, row) => sum + row.speak, 0);
+  const activeDays = rows.filter(row => row.watch || row.speak || row.memo.trim()).length;
+  document.getElementById("sum-watch").textContent = fmt(totalWatch);
+  document.getElementById("sum-speak").textContent = fmt(totalSpeak);
+  document.getElementById("sum-ratio").textContent = totalWatch ? Math.round(totalSpeak / totalWatch * 100) + "%" : "0%";
+  document.getElementById("sum-days").textContent = `${activeDays}/7`;
+  drawProgressChart(rows);
+}
+
+function drawProgressChart(rows){
+  const canvas = document.getElementById("progress-chart");
+  const ctx = canvas.getContext("2d");
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(320, Math.floor(rect.width * dpr));
+  canvas.height = Math.max(140, Math.floor(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const width = canvas.width / dpr;
+  const height = canvas.height / dpr;
+  ctx.clearRect(0, 0, width, height);
+  const pad = {top:14,right:12,bottom:26,left:40};
+  const chartW = width - pad.left - pad.right;
+  const chartH = height - pad.top - pad.bottom;
+  const maxValue = Math.max(60, ...rows.flatMap(row => [row.watch, row.speak]));
+  ctx.strokeStyle = "#30363d";
+  ctx.lineWidth = 1;
+  ctx.font = "10px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+  ctx.fillStyle = "#8b949e";
+  for(let i = 0; i <= 3; i++){
+    const y = pad.top + chartH * i / 3;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(width - pad.right, y);
+    ctx.stroke();
+    const label = fmtHM(maxValue * (3 - i) / 3);
+    ctx.fillText(label, 4, y + 3);
+  }
+  const group = chartW / rows.length;
+  const barW = Math.max(5, Math.min(18, group * 0.26));
+  rows.forEach((row, index) => {
+    const x = pad.left + group * index + group / 2;
+    const watchH = chartH * row.watch / maxValue;
+    const speakH = chartH * row.speak / maxValue;
+    ctx.fillStyle = "#e3b341";
+    ctx.fillRect(x - barW - 1, pad.top + chartH - watchH, barW, watchH);
+    ctx.fillStyle = "#3fb950";
+    ctx.fillRect(x + 1, pad.top + chartH - speakH, barW, speakH);
+    ctx.fillStyle = "#8b949e";
+    ctx.textAlign = "center";
+    ctx.fillText(shortDateLabel(row.key), x, height - 8);
+  });
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#e3b341";
+  ctx.fillRect(width - 92, 8, 8, 8);
+  ctx.fillStyle = "#8b949e";
+  ctx.fillText("視聴", width - 80, 15);
+  ctx.fillStyle = "#3fb950";
+  ctx.fillRect(width - 48, 8, 8, 8);
+  ctx.fillStyle = "#8b949e";
+  ctx.fillText("発話", width - 36, 15);
+}
+
+function openPdfReport(){
+  renderDashboard();
+  const rows = getDailyStats(7);
+  const totalWatch = rows.reduce((sum, row) => sum + row.watch, 0);
+  const totalSpeak = rows.reduce((sum, row) => sum + row.speak, 0);
+  const ratio = totalWatch ? Math.round(totalSpeak / totalWatch * 100) : 0;
+  const memo = localStorage.getItem("el_memo_" + today()) || "";
+  const lang = localStorage.getItem("ll_lang") || "English";
+  const generated = new Date().toLocaleString("ja-JP");
+  const chartImage = document.getElementById("progress-chart").toDataURL("image/png");
+  const rowsHtml = rows.map(row => `
+    <tr>
+      <td>${escAttr(row.key)}</td>
+      <td>${escAttr(fmt(row.watch))}</td>
+      <td>${escAttr(fmt(row.speak))}</td>
+      <td>${row.watch ? Math.round(row.speak / row.watch * 100) : 0}%</td>
+      <td>${escAttr(row.memo || "")}</td>
+    </tr>
+  `).join("");
+  const report = window.open("", "_blank");
+  if(!report){
+    alert("レポート画面を開けませんでした。ポップアップ許可を確認してください。");
+    return;
+  }
+  report.document.write(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>LingoLog Report</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;margin:32px;line-height:1.55}
+h1{font-size:24px;margin:0 0 4px}
+.meta{color:#5f6b7a;font-size:12px;margin-bottom:24px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.box{border:1px solid #d8dee8;border-radius:8px;padding:12px}
+.label{font-size:11px;color:#5f6b7a;text-transform:uppercase;letter-spacing:.05em}
+.value{font-size:20px;font-weight:700;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}
+th{background:#f3f6fa}
+.chart{border:1px solid #d8dee8;border-radius:8px;padding:10px;margin-bottom:24px}
+.chart img{display:block;width:100%;height:auto}
+.memo{white-space:pre-wrap;border:1px solid #d8dee8;border-radius:8px;padding:12px;min-height:64px}
+.print{margin:20px 0;padding:8px 14px;border:1px solid #1f6feb;border-radius:6px;background:#1f6feb;color:#fff}
+@media print{.print{display:none}body{margin:18mm}}
+</style>
+</head>
+<body>
+<h1>LingoLog 学習レポート</h1>
+<div class="meta">作成日時: ${escAttr(generated)} / 学習言語: ${escAttr(lang)} / 期間: 直近7日</div>
+<div class="summary">
+  <div class="box"><div class="label">視聴時間</div><div class="value">${escAttr(fmt(totalWatch))}</div></div>
+  <div class="box"><div class="label">発話時間</div><div class="value">${escAttr(fmt(totalSpeak))}</div></div>
+  <div class="box"><div class="label">発話率</div><div class="value">${ratio}%</div></div>
+  <div class="box"><div class="label">学習日</div><div class="value">${rows.filter(row => row.watch || row.speak || row.memo.trim()).length}/7</div></div>
+</div>
+<h2>7日間の推移</h2>
+<div class="chart"><img src="${chartImage}" alt="7日間の視聴時間と発話時間のグラフ"></div>
+<h2>今日のメモ</h2>
+<div class="memo">${escAttr(memo || "記録なし")}</div>
+<h2>日別ログ</h2>
+<table>
+  <thead><tr><th>日付</th><th>視聴</th><th>発話</th><th>発話率</th><th>メモ</th></tr></thead>
+  <tbody>${rowsHtml}</tbody>
+</table>
+<button class="print" onclick="window.print()">PDFとして保存</button>
+</body>
+</html>`);
+  report.document.close();
+  report.focus();
 }
 
 function saveMemo(){
   localStorage.setItem("el_memo_" + today(), document.getElementById("today-memo").value);
+  renderDashboard();
 }
 
 function openSettings(){
@@ -585,18 +900,21 @@ function showPlaylistError(message){
   document.getElementById("h-date").textContent = d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"});
   document.getElementById("h-watch").textContent = fmt(todayW);
   document.getElementById("h-speak").textContent = fmt(todayS);
+  document.getElementById("mic-threshold").value = String(speechThreshold);
   document.getElementById("today-memo").value = localStorage.getItem("el_memo_" + today()) || "";
   applyLang(localStorage.getItem("ll_lang") || "");
   document.getElementById("source-badge").textContent = localStorage.getItem("ll_videos") ? "保存済み" : "ダミー";
   renderList();
   renderPins();
+  renderDashboard();
   if(localStorage.getItem("ll_playlist")) loadPlaylistPreview(false);
 })();
 
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeSettings(); });
+window.addEventListener("resize", renderDashboard);
 window.addEventListener("beforeunload", () => {
   stopWatchTimer();
-  if(speakTimer) clearInterval(speakTimer);
+  stopMic();
 });
 </script>
 </body>
